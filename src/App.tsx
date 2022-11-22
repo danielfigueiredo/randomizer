@@ -1,18 +1,14 @@
 import React, { useCallback, useState } from 'react';
-import { Button } from '@mui/material';
+import { createTheme, Alert, Box, Button, Chip, Grid, List, ListItem, ListItemText, TextField, Typography, ThemeProvider, CssBaseline } from '@mui/material';
 
 function shuffle(frozenArray: string[]): string[] {
   const array = [...frozenArray];
   let currentIndex = array.length, randomIndex;
 
-  // While there remain elements to shuffle.
   while (currentIndex !== 0) {
-
-    // Pick a remaining element.
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex--;
 
-    // And swap it with the current element.
     [array[currentIndex], array[randomIndex]] = [
       array[randomIndex], array[currentIndex]];
   }
@@ -20,47 +16,91 @@ function shuffle(frozenArray: string[]): string[] {
   return array;
 }
 
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
+
 function App() {
   const [addInputValue, setAddInputValue] = useState<string>('');
   const [listValues, setListValues] = useState<string[]>([]);
   const [randomizedList, setRandomizedList] = useState<string[]>([]);
+  const [showError, setShowError] = useState(false);
 
   const onAddInputToList = useCallback(() => {
-    setListValues([...listValues, addInputValue]);
-    setAddInputValue('');
-  }, [listValues, setListValues, setAddInputValue, addInputValue]);
+    if (addInputValue) {
+      if (listValues.includes(addInputValue)) {
+        setShowError(true);
+
+        return;
+      }
+      const moreListValues = addInputValue.split('\n')
+        .map(row => row.trim())
+        .filter((row, index, rows) => !!row && !listValues.includes(row) && rows.indexOf(row) === index);
+      setListValues([...listValues, ...moreListValues]);
+      setAddInputValue('');
+    }
+  }, [listValues, setListValues, setAddInputValue, addInputValue, setShowError]);
+
+  const onRandomize = useCallback(() => {
+    setRandomizedList(shuffle(listValues));
+  }, [listValues, setRandomizedList]);
+
+  const onDeleteItem = useCallback((item: string) => {
+    setListValues(listValues.filter(i => i !== item));
+  }, [listValues, setListValues]);
 
   return (
-    <div style={{ margin: '15px' }}>
-      <input
-        style={{ marginRight: '10px' }}
-        value={addInputValue}
-        onChange={(event) => {
-          setAddInputValue((event.target as HTMLInputElement).value)
-        }}
-        onKeyUp={(event) => {
-          if (event.key === 'Enter' && addInputValue) {
-            onAddInputToList();
-          }
-        }}
-      />
-      <Button
-        onClick={() => {
-          if (addInputValue) {
-            onAddInputToList();
-          }
-        }}
-      >
-        Add to list
-      </Button>
-      <p>List: {listValues.join(', ')}</p>
-      <Button onClick={() => {
-        setRandomizedList(shuffle(listValues));
-      }}>
-        Randomize list
-      </Button>
-      <p>Randomized list: {randomizedList.join(', ')}</p>
-    </div>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline />
+      <Box margin={2}>
+        <Box width="100%">
+          <TextField
+            style={{ width: '30%' }}
+            rows={10}
+            multiline
+            value={addInputValue}
+            onChange={(event) => {
+              setShowError(false);
+              setAddInputValue((event.target as HTMLInputElement).value)
+            }}
+          />
+          <Button onClick={onAddInputToList}>
+            Add to list
+          </Button>
+        </Box>
+        <Box paddingY={1}>
+          {showError && <Alert severity="error">Item already exists in list</Alert>}
+        </Box>
+        <Grid container>
+          <Grid item xs={6} height={10}>
+            <Typography variant="h6">List</Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Button onClick={onRandomize}>
+              <Typography variant="button">Randomize list</Typography>
+            </Button>
+          </Grid>
+          <Grid item xs={6}>
+            {listValues.map(item => (
+              <Box key={item} marginBottom={1}>
+                <Chip clickable onDelete={() => onDeleteItem(item)} label={item} />
+              </Box>
+            ))}
+          </Grid>
+          <Grid item xs={6}>
+            <List dense={true}>
+              {randomizedList.map(item => (
+                <ListItem key={item}>
+                  <ListItemText primary={item} />
+                </ListItem>
+              ))}
+            </List>
+          </Grid>
+        </Grid>
+      </Box>
+    </ThemeProvider>
   );
 }
 
