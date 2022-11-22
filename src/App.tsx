@@ -48,8 +48,13 @@ function App() {
   }, [listValues, setRandomizedList]);
 
   const onDeleteItem = useCallback((item: string) => {
-    setListValues(listValues.filter(i => i !== item));
+    return () => setListValues(listValues.filter(i => i !== item));
   }, [listValues, setListValues]);
+
+  const onChangeAddItemInput = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setShowError(false);
+    setAddInputValue(event.target.value)
+  }, [setShowError, setAddInputValue]);
 
   return (
     <ThemeProvider theme={darkTheme}>
@@ -61,10 +66,7 @@ function App() {
             rows={10}
             multiline
             value={addInputValue}
-            onChange={(event) => {
-              setShowError(false);
-              setAddInputValue((event.target as HTMLInputElement).value)
-            }}
+            onChange={onChangeAddItemInput}
           />
           <Button onClick={onAddInputToList}>
             Add to list
@@ -85,7 +87,7 @@ function App() {
           <Grid item xs={6}>
             {listValues.map(item => (
               <Box key={item} marginBottom={1}>
-                <Chip clickable onDelete={() => onDeleteItem(item)} label={item} />
+                <Chip clickable onClick={onDeleteItem(item)} onDelete={onDeleteItem(item)} label={item} />
               </Box>
             ))}
           </Grid>
